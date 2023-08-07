@@ -44,7 +44,7 @@ impl MediaInfo {
                         episode: i.episode,
                     },
                 },
-                None => NoMedia { path: path.clone() },
+                None => NoMedia { path: path.clone() }, // TODO: This should be an error
             },
             None => {
                 let omdb = OMDB::new(omdb_apikey);
@@ -55,7 +55,7 @@ impl MediaInfo {
                             year: res.year,
                         },
                     },
-                    None => NoMedia { path: path.clone() },
+                    None => NoMedia { path: path.clone() }, // TODO: This should be an error
                 }
             }
         })

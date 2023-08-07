@@ -21,6 +21,7 @@ pub struct Config {
     pub movie_path: PathBuf,
     pub permissions: PermissionConfig,
     pub omdb: OmdbConfig,
+    pub overwrite: bool,
 }
 
 impl Config {
