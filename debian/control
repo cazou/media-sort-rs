@@ -1,0 +1,29 @@
+Source: rust-media-sort
+Section: utils
+Priority: optional
+Maintainer: Detlev Casanova <detlev.casanova@gmail.com>
+Build-Depends: debhelper-compat (= 13),
+ dh-cargo (>= 24),
+ cargo:native,
+ rustc:native,
+ libstd-rust-dev,
+ librust-anyhow-dev,
+ librust-regex-dev,
+ librust-reqwest-dev,
+ librust-serde-yaml-dev,
+ librust-serde-json-dev,
+ librust-structopt-dev,
+ librust-notify-dev
+Standards-Version: 4.5.1
+Homepage: https://github.com/cazou/media-sort-rs
+#Vcs-Browser: https://salsa.debian.org/debian/rust-media-sort
+#Vcs-Git: https://salsa.debian.org/debian/rust-media-sort.git
+Rules-Requires-Root: no
+
+Package: rust-media-sort
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Tool to sort media files library.
+ Use different web services to determine shows and movies metadata
+ based on the file names. Sort files in the configured folders and
+ adjust permissions if needed.
