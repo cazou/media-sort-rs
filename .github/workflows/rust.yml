@@ -2,9 +2,9 @@ name: Health check
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "debian/bookworm" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "debian/bookworm" ]
 
 env:
   CARGO_TERM_COLOR: always

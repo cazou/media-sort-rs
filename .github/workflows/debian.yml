@@ -1,0 +1,34 @@
+name: Build Debian Bookworm package
+
+on:
+  push:
+    branches: [ "debian/bookworm" ]
+  pull_request:
+    branches: [ "debian/bookworm" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+
+jobs:
+  build-debs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: jtdor/build-deb-action@v1
+        env:
+          DEB_BUILD_OPTIONS: noautodbgsym
+        with:
+          host-arch: amd64
+          docker-image: debian:bookworm-slim
+      - uses: jtdor/build-deb-action@v1
+        env:
+          DEB_BUILD_OPTIONS: noautodbgsym
+        with:
+          host-arch: arm64
+          docker-image: debian:bookworm-slim
+      - name: upload
+        uses: actions/upload-artifact@v3
+        with:
+          path: 'debian/artifacts/*.deb'
+          name: debian_package
