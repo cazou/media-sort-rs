@@ -67,6 +67,7 @@ impl MediaInfo {
             r"(720p|1080p|1440p|2160p|hdtv|x264|dts|bluray|aac|atmos|x265|hevc|h264|h265|web|webrip).*",
         )
             .unwrap();
+        let parenthesis = regex::Regex::new(r"\(.*\)").unwrap();
         let mut path = path.clone();
 
         path.set_extension("");
@@ -83,6 +84,7 @@ impl MediaInfo {
 
         name = punctuation.replace_all(&name, " ").to_string();
         name = encodings.replace(&name, "").to_string();
+        name = parenthesis.replace_all(&name, "").to_string();
 
         name.trim().to_string()
     }
@@ -112,5 +114,21 @@ impl MediaInfo {
             season,
             episode,
         })
+    }
+}
+
+#[cfg(test)]
+mod mediainfo_tests {
+    use crate::mediainfo::MediaInfo;
+    use std::path::PathBuf;
+
+    #[test]
+    fn check_normalize() {
+        let path =
+            PathBuf::from("Test title 22 (123(4) ) ) h264 - (ddd(d)) || )(*&^%$#@ rubbish.mkv");
+        assert_eq!(
+            MediaInfo::path_normalize(&path),
+            String::from("test title 22")
+        )
     }
 }
