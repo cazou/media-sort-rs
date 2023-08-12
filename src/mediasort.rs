@@ -169,13 +169,17 @@ impl MediaSort {
 
             // Set user/group
             unsafe {
-                let pwd = *libc::getpwnam(config.permissions.user.as_ptr() as *const c_char);
+                let pwd = libc::getpwnam(config.permissions.user.as_ptr() as *const c_char);
 
-                libc::chown(
-                    dst.to_str().unwrap().as_ptr() as *const c_char,
-                    pwd.pw_uid,
-                    pwd.pw_gid,
-                );
+                if !pwd.is_null() {
+                    let pwd = *pwd;
+
+                    libc::chown(
+                        dst.to_str().unwrap().as_ptr() as *const c_char,
+                        pwd.pw_uid,
+                        pwd.pw_gid,
+                    );
+                }
             }
 
             dst.pop();
