@@ -12,6 +12,38 @@ pub enum Episode {
     Special(String),
 }
 
+impl Episode {
+    pub fn new(e: u8, title: &str) -> Episode {
+        return if e != 0 {
+            Episode::Numbered(e)
+        } else if title.is_empty() {
+            Episode::Special("Unknown Special".to_string())
+        } else {
+            Episode::Special(Self::capitalize_words(title))
+        };
+    }
+
+    fn capitalize_words(value: &str) -> String {
+        value
+            .split(' ')
+            .map(|w| {
+                let new_word: String = w
+                    .char_indices()
+                    .map(|(i, c)| {
+                        if i == 0 {
+                            c.to_uppercase().to_string()
+                        } else {
+                            c.to_string()
+                        }
+                    })
+                    .collect();
+                new_word
+            })
+            .collect::<Vec<String>>()
+            .join(" ")
+    }
+}
+
 impl Display for Episode {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -165,42 +197,14 @@ impl MediaInfo {
             return;
         };
 
-        let episode: u8 = if let Ok(e) = caps["episode"].parse() {
-            e
+        let episode = if let Ok(e) = caps["episode"].parse() {
+            Episode::new(e, &caps["title"])
         } else {
             return;
         };
 
-        let episode = if episode != 0 {
-            Episode::Numbered(episode)
-        } else if caps["title"].is_empty() {
-            Episode::Special("Unknown Special".to_string())
-        } else {
-            Episode::Special(Self::capitalize_words(&caps["title"]))
-        };
-
         self.name = caps["name"].trim().to_string();
         self.show_info = Some(TVShowInfo { season, episode });
-    }
-
-    fn capitalize_words(value: &str) -> String {
-        value
-            .split(' ')
-            .map(|w| {
-                let new_word: String = w
-                    .char_indices()
-                    .map(|(i, c)| {
-                        if i == 0 {
-                            c.to_uppercase().to_string()
-                        } else {
-                            c.to_string()
-                        }
-                    })
-                    .collect();
-                new_word
-            })
-            .collect::<Vec<String>>()
-            .join(" ")
     }
 }
 
