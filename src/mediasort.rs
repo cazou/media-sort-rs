@@ -109,18 +109,18 @@ impl MediaSort {
             let show = info.show_info.unwrap();
             config
                 .show_path
-                .join(info.title.clone())
+                .join(info.name.clone())
                 .join(format!("Season {:02}", show.season))
                 .join(format!(
-                    "{} - S{:02}E{:02}",
-                    info.title.clone(),
+                    "{} - S{:02}E{}",
+                    info.name.clone(),
                     show.season,
                     show.episode
                 ))
         } else {
             config.movie_path.join(match info.year {
-                Some(y) => format!("{} ({})", info.title.clone(), y),
-                None => info.title.clone(),
+                Some(y) => format!("{} ({})", info.name.clone(), y),
+                None => info.name.clone(),
             })
         };
 

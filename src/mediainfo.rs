@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 //use crate::mediainfo::MediaInfo::{Movie, NoMedia, TVShow};
 use crate::omdb::OMDB;
 use crate::tvmaze::TVMaze;
@@ -6,14 +7,29 @@ use chrono::{Datelike, Utc};
 use std::path::PathBuf;
 
 #[derive(Eq, PartialEq, Debug)]
+pub enum Episode {
+    Numbered(u8),
+    Special(String),
+}
+
+impl Display for Episode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Episode::Numbered(e) => write!(f, "{:02}", e),
+            Episode::Special(t) => write!(f, "00 - {}", t),
+        }
+    }
+}
+
+#[derive(Eq, PartialEq, Debug)]
 pub struct TVShowInfo {
     pub season: u8,
-    pub episode: u8,
+    pub episode: Episode,
 }
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct MediaInfo {
-    pub title: String,
+    pub name: String,
     pub year: Option<i32>,
     pub show_info: Option<TVShowInfo>,
 }
@@ -32,13 +48,13 @@ impl MediaInfo {
             },
         }
 
-        let search_info = Self::extract_media_info(&path);
+        let media_info = Self::extract_media_info(&path);
 
-        Ok(match search_info.show_info {
-            Some(i) => match TVMaze::search_show(&search_info.title, search_info.year) {
+        Ok(match media_info.show_info {
+            Some(i) => match TVMaze::search_show(&media_info.name, media_info.year) {
                 Some(res) => MediaInfo {
-                    title: res.show.name,
-                    year: search_info.year,
+                    name: res.show.name,
+                    year: media_info.year,
                     show_info: Some(TVShowInfo {
                         season: i.season,
                         episode: i.episode,
@@ -46,22 +62,22 @@ impl MediaInfo {
                 },
                 None => bail!(
                     "Show not found: {} ({})",
-                    &search_info.title,
-                    search_info.year.unwrap_or(-1)
+                    &media_info.name,
+                    media_info.year.unwrap_or(-1)
                 ),
             },
             None => {
                 let omdb = OMDB::new(omdb_apikey);
-                match omdb.search_movie(&search_info.title, search_info.year) {
+                match omdb.search_movie(&media_info.name, media_info.year) {
                     Some(res) => MediaInfo {
-                        title: res.title,
-                        year: search_info.year,
+                        name: res.title,
+                        year: media_info.year,
                         show_info: None,
                     },
                     None => bail!(
                         "Movie not found: {} ({})",
-                        &search_info.title,
-                        search_info.year.unwrap_or(-1)
+                        &media_info.name,
+                        media_info.year.unwrap_or(-1)
                     ),
                 }
             }
@@ -70,7 +86,7 @@ impl MediaInfo {
 
     fn extract_media_info(path: &PathBuf) -> MediaInfo {
         let mut media_info = MediaInfo {
-            title: Self::path_normalize(path),
+            name: Self::path_normalize(path),
             year: None,
             show_info: None,
         };
@@ -118,14 +134,14 @@ impl MediaInfo {
          */
         let year_re = regex::Regex::new(r"^(?P<title>.*) (?P<year>\d{4})$").unwrap();
 
-        match year_re.captures(&self.title) {
+        match year_re.captures(&self.name) {
             None => {}
             Some(c) => match c["year"].parse::<i32>() {
                 Ok(y) => {
                     let now = Utc::now();
                     // We consider that the first movie made was "The Horse in Motion" in 1878
                     if (1878..=now.year()).contains(&y) {
-                        self.title = c["title"].to_string();
+                        self.name = c["title"].to_string();
                         self.year = Some(y);
                     }
                 }
@@ -135,10 +151,11 @@ impl MediaInfo {
     }
 
     fn extract_show_season_episode(&mut self) {
-        let se =
-            regex::Regex::new(r"(?P<title>.*)[Ss](?P<season>\d{1,2})[Ee](?P<episode>\d{1,2}).*")
-                .unwrap();
-        let caps = match se.captures(&self.title) {
+        let se = regex::Regex::new(
+            r"(?P<name>.*)[Ss](?P<season>\d{1,2})[Ee](?P<episode>\d{1,2}) *(?P<title>.*)",
+        )
+        .unwrap();
+        let caps = match se.captures(&self.name) {
             None => return,
             Some(c) => c,
         };
@@ -154,14 +171,43 @@ impl MediaInfo {
             return;
         };
 
-        self.title = caps["title"].trim().to_string();
+        let episode = if episode != 0 {
+            Episode::Numbered(episode)
+        } else if caps["title"].is_empty() {
+            Episode::Special("Unknown Special".to_string())
+        } else {
+            Episode::Special(Self::capitalize_words(&caps["title"]))
+        };
+
+        self.name = caps["name"].trim().to_string();
         self.show_info = Some(TVShowInfo { season, episode });
+    }
+
+    fn capitalize_words(value: &str) -> String {
+        value
+            .split(' ')
+            .map(|w| {
+                let new_word: String = w
+                    .char_indices()
+                    .map(|(i, c)| {
+                        if i == 0 {
+                            c.to_uppercase().to_string()
+                        } else {
+                            c.to_string()
+                        }
+                    })
+                    .collect();
+                new_word
+            })
+            .collect::<Vec<String>>()
+            .join(" ")
     }
 }
 
 #[cfg(test)]
 mod mediainfo_tests {
-    use crate::mediainfo::{MediaInfo, TVShowInfo};
+    use crate::mediainfo::Episode::Special;
+    use crate::mediainfo::{Episode, MediaInfo, TVShowInfo};
     use std::path::PathBuf;
 
     #[test]
@@ -171,7 +217,7 @@ mod mediainfo_tests {
         assert_eq!(
             MediaInfo::extract_media_info(&path),
             MediaInfo {
-                title: String::from("test title 22"),
+                name: String::from("test title 22"),
                 year: None,
                 show_info: None,
             }
@@ -182,7 +228,7 @@ mod mediainfo_tests {
         assert_eq!(
             MediaInfo::extract_media_info(&path),
             MediaInfo {
-                title: String::from("test title"),
+                name: String::from("test title"),
                 year: Some(1922),
                 show_info: None,
             }
@@ -194,23 +240,51 @@ mod mediainfo_tests {
         assert_eq!(
             MediaInfo::extract_media_info(&path),
             MediaInfo {
-                title: String::from("test 2022 title 42"),
+                name: String::from("test 2022 title 42"),
                 year: None,
                 show_info: None,
             }
         );
 
         let path = PathBuf::from(
-            "doctor.who.2005.s13e00.the.power.of.the.doctor.1080p.web.h264-ggez[eztv.re].mkv",
+            "Great.Series.2005.s13e00.special.title.1080p.web.h264-ggez[eztv.re].mkv",
         );
         assert_eq!(
             MediaInfo::extract_media_info(&path),
             MediaInfo {
-                title: String::from("doctor who"),
+                name: String::from("great series"),
                 year: Some(2005),
                 show_info: Some(TVShowInfo {
                     season: 13,
-                    episode: 0
+                    episode: Special(String::from("Special Title")),
+                }),
+            }
+        );
+
+        let path = PathBuf::from("Great.Series.2005.s13e00.1080p.web.h264-ggez[eztv.re].mkv");
+        assert_eq!(
+            MediaInfo::extract_media_info(&path),
+            MediaInfo {
+                name: String::from("great series"),
+                year: Some(2005),
+                show_info: Some(TVShowInfo {
+                    season: 13,
+                    episode: Special(String::from("Unknown Special")),
+                }),
+            }
+        );
+
+        let path = PathBuf::from(
+            "Great.Series.2005.s13e03.episode.title.1080p.web.h264-ggez[eztv.re].mkv",
+        );
+        assert_eq!(
+            MediaInfo::extract_media_info(&path),
+            MediaInfo {
+                name: String::from("great series"),
+                year: Some(2005),
+                show_info: Some(TVShowInfo {
+                    season: 13,
+                    episode: Episode::Numbered(3),
                 }),
             }
         );
