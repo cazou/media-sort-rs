@@ -22,12 +22,16 @@ impl OMDB {
         }
     }
 
-    pub fn search_movie(&self, title: &str) -> Option<OMDBResult> {
-        let url = Url::parse_with_params(
-            "http://www.omdbapi.com/",
-            &[("t", title.trim()), ("apikey", self.key.as_str())],
-        )
-        .unwrap();
+    pub fn search_movie(&self, title: &str, year: Option<i32>) -> Option<OMDBResult> {
+        let mut params = vec![("t", title.trim()), ("apikey", self.key.as_str())];
+        let year_str;
+
+        if let Some(y) = year {
+            year_str = format!("{}", y);
+            params.push(("y", year_str.as_str()));
+        }
+
+        let url = Url::parse_with_params("http://www.omdbapi.com/", &params).unwrap();
 
         let resp = match reqwest::blocking::get(url.as_str()) {
             Ok(r) => match r.json::<OMDBResult>() {

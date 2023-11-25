@@ -17,7 +17,7 @@ pub struct SearchResult {
 }
 
 impl TVMaze {
-    pub fn search_show(title: &str) -> Option<SearchResult> {
+    pub fn search_show(title: &str, _year: Option<i32>) -> Option<SearchResult> {
         let url =
             Url::parse_with_params("http://api.tvmaze.com/search/shows", &[("q", title.trim())])
                 .unwrap();

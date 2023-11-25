@@ -17,7 +17,6 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::Receiver;
 
 pub(crate) struct MediaSort {
-    created_files: Vec<PathBuf>,
     rx: Receiver<Result<Event>>,
     config: config::Config,
     dry_run: bool,
@@ -33,7 +32,6 @@ impl MediaSort {
         watcher.watch(Path::new(&config.dir_watch), RecursiveMode::Recursive)?;
 
         Ok(MediaSort {
-            created_files: vec![],
             rx,
             config,
             dry_run,
@@ -45,9 +43,7 @@ impl MediaSort {
     pub fn watch(&mut self) -> anyhow::Result<()> {
         for res in &self.rx {
             match res {
-                Ok(e) => {
-                    Self::process_event(&e, &mut self.created_files, &self.config, self.dry_run)
-                }
+                Ok(e) => Self::process_event(&e, &self.config, self.dry_run),
                 Err(e) => anyhow::bail!("watch error: {:?}", e),
             }
         }
@@ -188,25 +184,15 @@ impl MediaSort {
         Ok(ret)
     }
 
-    fn process_event(
-        e: &Event,
-        created_files: &mut Vec<PathBuf>,
-        config: &config::Config,
-        dry_run: bool,
-    ) {
+    fn process_event(e: &Event, config: &config::Config, dry_run: bool) {
+        // FIXME: Sometimes, it looks like folders are just created...
         match e.kind {
-            EventKind::Create(_) => {
-                println!("created: {:?}", e.paths[0]);
-                created_files.push(e.paths[0].clone());
-            }
             EventKind::Access(AccessKind::Close(_)) => {
                 println!("closed: {:?}", e.paths[0]);
-                if created_files.contains(&e.paths[0]) {
-                    if let Err(err) = Self::process_file(&e.paths[0], config, dry_run) {
-                        println!("Cannot process {:?}: {err}. Ignoring...", e.paths[0]);
-                        // TODO: There should be a way to notify the issue
-                        //       A nice way would be via Home assistant
-                    }
+                if let Err(err) = Self::process_file(&e.paths[0], config, dry_run) {
+                    println!("Cannot process {:?}: {err}. Ignoring...", e.paths[0]);
+                    // TODO: There should be a way to notify the issue
+                    //       A nice way would be via Home assistant
                 }
             }
             EventKind::Modify(Name(notify::event::RenameMode::To)) => {
