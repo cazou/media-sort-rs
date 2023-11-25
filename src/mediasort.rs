@@ -1,8 +1,5 @@
 use crate::config;
-use std::collections::HashMap;
-
 use crate::mediainfo::MediaInfo;
-use crate::mediainfo::MediaInfo::{Movie, NoMedia, TVShow};
 use anyhow::bail;
 use libc;
 use libc::c_char;
@@ -11,6 +8,7 @@ use notify::event::ModifyKind::Name;
 use notify::{
     Config, Event, EventKind, INotifyWatcher, RecommendedWatcher, RecursiveMode, Result, Watcher,
 };
+use std::collections::HashMap;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
@@ -105,27 +103,25 @@ impl MediaSort {
         config: &config::Config,
         dry_run: bool,
     ) -> anyhow::Result<PathBuf> {
-        // TODO: Separate "Not a media file" from actual retrieve error
-        let mut dst = match MediaInfo::from_path(&new_file, &config.omdb.apikey)? {
-            TVShow { info } => config
+        let info = MediaInfo::from_path(&new_file, &config.omdb.apikey)?;
+
+        let mut dst = if info.is_show() {
+            let show = info.show_info.unwrap();
+            config
                 .show_path
                 .join(info.title.clone())
-                .join(format!("Season {:02}", info.season))
+                .join(format!("Season {:02}", show.season))
                 .join(format!(
                     "{} - S{:02}E{:02}",
                     info.title.clone(),
-                    info.season,
-                    info.episode
-                )),
-            Movie { info } => {
-                config
-                    .movie_path
-                    .join(format!("{} ({})", info.title.clone(), info.year.clone()))
-            }
-            NoMedia { path } => {
-                println!("{:?}: Not a media file. Ignored", path);
-                bail!("Not a media file")
-            }
+                    show.season,
+                    show.episode
+                ))
+        } else {
+            config.movie_path.join(match info.year {
+                Some(y) => format!("{} ({})", info.title.clone(), y),
+                None => info.title.clone(),
+            })
         };
 
         if let Some(e) = new_file.extension() {
