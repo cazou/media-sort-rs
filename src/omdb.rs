@@ -1,5 +1,5 @@
 use reqwest::Url;
-use serde::{Deserialize, Serialize};
+use serde::{de, Deserialize, Serialize};
 
 // OMDB only has movies
 #[derive(Debug)]
@@ -9,10 +9,28 @@ pub struct OMDB {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OMDBResult {
+    #[serde(rename = "Response")]
+    #[serde(deserialize_with = "deserialize_response")]
+    pub response: bool,
     #[serde(rename = "Title")]
-    pub title: String,
+    pub title: Option<String>,
     #[serde(rename = "Year")]
-    pub year: String,
+    pub year: Option<String>,
+    #[serde(rename = "Error")]
+    pub error: Option<String>,
+}
+
+fn deserialize_response<'de, D>(deserializer: D) -> Result<bool, D::Error>
+where
+    D: de::Deserializer<'de>,
+{
+    let s: &str = de::Deserialize::deserialize(deserializer)?;
+
+    match s {
+        "True" => Ok(true),
+        "False" => Ok(false),
+        _ => Err(de::Error::unknown_variant(s, &["True", "False"])),
+    }
 }
 
 impl OMDB {
@@ -33,20 +51,25 @@ impl OMDB {
 
         let url = Url::parse_with_params("http://www.omdbapi.com/", &params).unwrap();
 
-        let resp = match reqwest::blocking::get(url.as_str()) {
+        match reqwest::blocking::get(url.as_str()) {
             Ok(r) => match r.json::<OMDBResult>() {
-                Ok(j) => j,
+                Ok(j) => {
+                    if j.response {
+                        Some(j)
+                    } else {
+                        println!("Error: {}", j.error.unwrap());
+                        None
+                    }
+                }
                 Err(e) => {
                     println!("Cannot read json response: {e}");
-                    return None;
+                    None
                 }
             },
             Err(e) => {
                 println!("Cannot get movie info: {e}");
-                return None;
+                None
             }
-        };
-
-        Some(resp)
+        }
     }
 }

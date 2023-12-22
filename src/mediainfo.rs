@@ -1,9 +1,8 @@
-use std::fmt::{Display, Formatter};
-//use crate::mediainfo::MediaInfo::{Movie, NoMedia, TVShow};
 use crate::omdb::OMDB;
 use crate::tvmaze::TVMaze;
 use anyhow::bail;
 use chrono::{Datelike, Utc};
+use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 
 #[derive(Eq, PartialEq, Debug)]
@@ -102,7 +101,7 @@ impl MediaInfo {
                 let omdb = OMDB::new(omdb_apikey);
                 match omdb.search_movie(&media_info.name, media_info.year) {
                     Some(res) => MediaInfo {
-                        name: res.title,
+                        name: res.title.unwrap(),
                         year: media_info.year,
                         show_info: None,
                     },
@@ -160,7 +159,7 @@ impl MediaInfo {
 
     fn extract_year(&mut self) {
         /*
-         * Estimate if the title is followed by a year. It will word with titles like "The 4400"
+         * Estimate if the title is followed by a year. It will work with titles like "The 4400"
          * (4400 is not a valid movie year), but still have an issue with titles like "2012".
          * I've seen that so let's just work with this for now.
          */

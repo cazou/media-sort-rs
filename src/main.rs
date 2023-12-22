@@ -22,7 +22,7 @@ struct Options {
     #[structopt(long)]
     sort: Option<PathBuf>,
 
-    /// Check the give folder for files that would be sorted in the same files.
+    /// Check the given folder for files that would be sorted in the same files.
     /// This is useful to be sure that a better version of a show will not be overwritten by a less
     /// good one.
     /// This will show a summary of which files are conflicting and which file could not be sorted
