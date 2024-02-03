@@ -133,7 +133,7 @@ impl MediaInfo {
     fn path_normalize(path: &PathBuf) -> String {
         let punctuation = regex::Regex::new(r"[\.\-_]").unwrap();
         let encodings = regex::Regex::new(
-            r"(720p|1080p|1440p|2160p|hdtv|x264|dts|bluray|aac|atmos|x265|hevc|h264|h265|web|webrip|imax).*",
+            r"(720p|1080p|1440p|2160p|hdtv|x264|dts|bluray|aac|atmos|x265|hevc|h264|h265|web|webrip|imax|multi).*",
         )
             .unwrap();
         let parenthesis = regex::Regex::new(r"\(.*\)").unwrap();
