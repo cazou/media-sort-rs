@@ -107,9 +107,18 @@ impl MediaSort {
 
         let mut dst = if info.is_show() {
             let show = info.show_info.unwrap();
-            config
+            let mut show_path = config
                 .show_path
-                .join(info.name.clone())
+                .join(info.name.clone());
+
+            // Check if the path exists without a year
+            show_path = if show_path.exists() || info.year.is_none() { show_path } else {
+                config
+                    .show_path
+                    .join(format!("{} ({})", info.name.clone(), info.year.unwrap()))
+            };
+
+            show_path
                 .join(format!("Season {:02}", show.season))
                 .join(format!(
                     "{} - S{:02}E{}",
