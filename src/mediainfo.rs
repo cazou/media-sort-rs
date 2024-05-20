@@ -75,7 +75,7 @@ impl MediaInfo {
         match path.extension() {
             None => bail!("No extension: {}", path.to_str().unwrap_or("")),
             Some(ext) => match ext.to_str() {
-                Some("mkv") | Some("avi") | Some("mp4") | Some("srt") => {}
+                Some("mkv") | Some("avi") | Some("mp4") | Some("srt") | Some("idx") | Some("sub") => {}
                 _ => bail!("Unknown extension: {}", path.to_str().unwrap_or("")),
             },
         }
@@ -186,7 +186,7 @@ impl MediaInfo {
         let se = regex::Regex::new(
             r"(?P<name>.*)[Ss](?P<season>\d{1,2})[Ee](?P<episode>\d{1,2}) *(?P<title>.*)",
         )
-        .unwrap();
+            .unwrap();
         let caps = match se.captures(&self.name) {
             None => return,
             Some(c) => c,
