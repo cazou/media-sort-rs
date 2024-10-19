@@ -1,3 +1,5 @@
 /target
 media-sort.yaml
 Cargo.lock
+.idea
+tests
