@@ -133,7 +133,7 @@ impl MediaInfo {
     fn path_normalize(path: &PathBuf) -> String {
         let punctuation = regex::Regex::new(r"[\.\-_]").unwrap();
         let encodings = regex::Regex::new(
-            r"(720p|1080p|1440p|2160p|hdtv|x264|dts|bluray|aac|atmos|x265|hevc|h264|h265|web|webrip|imax|multi).*",
+            r"(720p|1080p|1440p|2160p|hdtv|x264|dts|bluray|aac|atmos|x265|hevc|h264|h265|web|webrip|imax|multi|extended).*",
         )
             .unwrap();
         let parenthesis = regex::Regex::new(r"\(.*\)").unwrap();
@@ -160,7 +160,7 @@ impl MediaInfo {
 
     fn extract_year(&mut self) {
         /*
-         * Estimate if the title is followed by a year. It will word with titles like "The 4400"
+         * Estimate if the title is followed by a year. It will work with titles like "The 4400"
          * (4400 is not a valid movie year), but still have an issue with titles like "2012".
          * I've seen that so let's just work with this for now.
          */
