@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build
       run: cargo build --all-features --verbose --workspace --tests
     - name: Clippy
@@ -24,3 +24,16 @@ jobs:
       run: cargo test --verbose
     - name: Format
       run: cargo fmt --check --all
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: gcc-aarch64-linux-gnu
+        version: 1.0
+    - name: Add aarch64 support
+      run: rustup target add aarch64-unknown-linux-gnu
+    - name: Build release for aarch64
+      run: cargo build --release --target=aarch64-unknown-linux-gnu
+    - name: Upload built binary artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: media-sort-rs
+        path: target/aarch64-unknown-linux-gnu/release/media-sort-rs
